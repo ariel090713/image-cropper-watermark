@@ -29,7 +29,8 @@ class ImageController extends Controller
             'height' => 'required|numeric',
             'watermark' => 'nullable|image',
             'watermark_position' => 'nullable|string',
-            'watermark_size' => 'nullable|numeric'
+            'watermark_size' => 'nullable|numeric',
+            'watermark_opacity' => 'nullable|numeric|min:10|max:100'
         ]);
 
         $image = $this->imageManager->read($request->file('image'));
@@ -44,34 +45,51 @@ class ImageController extends Controller
             // Resize watermark
             $watermarkSize = $request->watermark_size ?? 100;
             $watermark->scale($watermarkSize, $watermarkSize);
+            
+            // Apply opacity (skip if 100%)
+            $opacity = $request->watermark_opacity ?? 100;
+            if ($opacity < 100) {
+                // Create transparent overlay effect
+                $watermark = $watermark->brightness($opacity - 100);
+            }
 
             // Position watermark
             $position = $request->watermark_position ?? 'bottom-right';
-            $offsetX = $offsetY = 10;
             
-            switch($position) {
-                case 'top-left':
-                    $offsetX = 10; $offsetY = 10;
-                    break;
-                case 'top-right':
-                    $offsetX = $image->width() - $watermark->width() - 10;
-                    $offsetY = 10;
-                    break;
-                case 'bottom-left':
-                    $offsetX = 10;
-                    $offsetY = $image->height() - $watermark->height() - 10;
-                    break;
-                case 'bottom-right':
-                    $offsetX = $image->width() - $watermark->width() - 10;
-                    $offsetY = $image->height() - $watermark->height() - 10;
-                    break;
-                case 'center':
-                    $offsetX = ($image->width() - $watermark->width()) / 2;
-                    $offsetY = ($image->height() - $watermark->height()) / 2;
-                    break;
+            if ($position === 'repeat') {
+                $spacing = 50;
+                for ($x = 0; $x < $image->width(); $x += $watermark->width() + $spacing) {
+                    for ($y = 0; $y < $image->height(); $y += $watermark->height() + $spacing) {
+                        $image->place($watermark, 'top-left', $x, $y);
+                    }
+                }
+            } else {
+                $offsetX = $offsetY = 10;
+                
+                switch($position) {
+                    case 'top-left':
+                        $offsetX = 10; $offsetY = 10;
+                        break;
+                    case 'top-right':
+                        $offsetX = $image->width() - $watermark->width() - 10;
+                        $offsetY = 10;
+                        break;
+                    case 'bottom-left':
+                        $offsetX = 10;
+                        $offsetY = $image->height() - $watermark->height() - 10;
+                        break;
+                    case 'bottom-right':
+                        $offsetX = $image->width() - $watermark->width() - 10;
+                        $offsetY = $image->height() - $watermark->height() - 10;
+                        break;
+                    case 'center':
+                        $offsetX = ($image->width() - $watermark->width()) / 2;
+                        $offsetY = ($image->height() - $watermark->height()) / 2;
+                        break;
+                }
+                
+                $image->place($watermark, 'top-left', $offsetX, $offsetY);
             }
-            
-            $image->place($watermark, 'top-left', $offsetX, $offsetY);
         }
 
         // Save to storage

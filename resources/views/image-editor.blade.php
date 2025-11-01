@@ -57,6 +57,11 @@
                 <input type="number" id="watermark-size" value="100" min="50" max="500">
             </div>
             <div class="control-group">
+                <label>Watermark Opacity:</label>
+                <input type="range" id="watermark-opacity" value="100" min="10" max="100">
+                <span id="opacity-value">100%</span>
+            </div>
+            <div class="control-group">
                 <label>Watermark Position:</label>
                 <select id="watermark-position">
                     <option value="top-left">Top Left</option>
@@ -64,6 +69,7 @@
                     <option value="bottom-left">Bottom Left</option>
                     <option value="bottom-right" selected>Bottom Right</option>
                     <option value="center">Center</option>
+                    <option value="repeat">Repeat</option>
                 </select>
             </div>
         </div>
@@ -177,7 +183,13 @@
                 formData.append('watermark', watermarkFile);
                 formData.append('watermark_size', document.getElementById('watermark-size').value);
                 formData.append('watermark_position', document.getElementById('watermark-position').value);
+                formData.append('watermark_opacity', document.getElementById('watermark-opacity').value);
             }
+
+        // Update opacity display
+        document.getElementById('watermark-opacity').addEventListener('input', function() {
+            document.getElementById('opacity-value').textContent = this.value + '%';
+        });
 
             fetch('/crop', {
                 method: 'POST',
